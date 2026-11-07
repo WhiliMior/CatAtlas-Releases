@@ -26,7 +26,7 @@ with zipfile.ZipFile(sys.argv[1]) as bundle:
 print('ZIP structure, CRC, and expected SHA-256 verified.')
 PY
 [[ "$mode" == --publish ]] || exit 0
-repository=WhiliMior/CatAtlas
+repository=WhiliMior/CatAtlas-Releases
 tag=cat-atlas-windows-20261107
 # Check API access before making changes. Do not replace existing releases.
 gh api "repos/$repository" --jq .full_name
