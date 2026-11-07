@@ -1,0 +1,25 @@
+{
+  "repository": "WhiliMior/CatAtlas",
+  "tag": "cat-atlas-windows-20261107",
+  "asset": "CatAtlas-Windows.zip",
+  "bytes": 121554145,
+  "sha256": "ae54c340b146b0e0078e26b7c5d7245661515f9c0cb15843c7b485414b425848",
+  "platform": "Windows x64",
+  "locales": [
+    "en",
+    "zh_CN"
+  ],
+  "entrypoint": "CatAtlas.exe",
+  "required_files": [
+    "CatAtlas.exe",
+    "CatAtlas.pck",
+    "design_config.json",
+    "localization.json",
+    "licenses/"
+  ],
+  "validation": {
+    "zip_crc": "passed",
+    "archive_structure": "passed",
+    "windows_runtime": "not_tested"
+  }
+}

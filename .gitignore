@@ -1,0 +1,13 @@
+# Release archives and split uploads belong in GitHub Releases, not Git.
+*.zip
+*.zip.*
+*.7z
+*.7z.*
+*.exe
+*.pck
+
+# Local output and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
