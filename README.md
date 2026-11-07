@@ -60,3 +60,18 @@ The publishing command creates a draft Release in **`WhiliMior/CatAtlas-Releases
 The package’s attribution and dependency notices are preserved in [`docs/licenses/`](docs/licenses/) and in the downloadable game package. These notices do not assign an open-source license to the game or its source code. Preserve the notices when distributing the build.
 
 包体中的美术归属、旗帜、Godot 和地图来源说明保留在 `docs/licenses/` 与下载包中；这些说明不代表游戏整体或其源代码采用某种开源许可证。
+
+### Native GitHub Actions upload / 使用仓库自身的发布凭据
+
+If a managed environment can push Git and create draft Releases but its injected credential is not accepted by `uploads.github.com`, use the repository's native Actions token for the upload:
+
+```sh
+bash scripts/stage-release.sh /path/CatAtlas-Windows.zip --prepare-only
+bash scripts/stage-release.sh /path/CatAtlas-Windows.zip --publish
+```
+
+The first command validates the archive and prepares local Git objects only. The second sends two parts, each at most 60 MiB, to a unique `release-upload/…` branch. The first push contains no workflow; the second push adds the publishing workflow after both parts are present. It assembles the original ZIP, verifies its byte count, SHA-256 and CRC, uploads into an empty draft, reads the uploaded file back, publishes, and verifies the public download. Existing published releases or assets are never overwritten.
+
+After success, the workflow deletes only its own temporary branch. On failure it retains the branch and draft for diagnosis. Package files never enter the `main` branch or its history; the temporary branch contains only the already approved public binary, not the game project. No credentials are copied into Git: the workflow uses GitHub's repository-scoped token.
+
+如果云环境的凭据能推送和创建草稿、但上传接口不接受该凭据，可使用此流程。包体只暂存于独立临时分支，不进入主分支历史；完整校验、回读和公开下载检查成功后自动删除临时分支。失败时保留草稿和临时分支用于检查，不会覆盖已有发行附件，也不会公开游戏开发仓库。

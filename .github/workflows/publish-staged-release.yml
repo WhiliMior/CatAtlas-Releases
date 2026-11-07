@@ -1,0 +1,107 @@
+name: Publish staged Cat Atlas Windows build
+
+on:
+  push:
+    branches:
+      - 'release-upload/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cat-atlas-windows-release
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPO: ${{ github.repository }}
+  RELEASE_TAG: cat-atlas-windows-20261107
+  PACKAGE_SHA256: ae54c340b146b0e0078e26b7c5d7245661515f9c0cb15843c7b485414b425848
+  PACKAGE_BYTES: '121554145'
+
+jobs:
+  publish:
+    if: github.repository == 'WhiliMior/CatAtlas-Releases'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble and verify the supplied package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat release-upload/CatAtlas-Windows.zip.part001 release-upload/CatAtlas-Windows.zip.part002 > "$RUNNER_TEMP/CatAtlas-Windows.zip"
+          test "$(stat -c %s "$RUNNER_TEMP/CatAtlas-Windows.zip")" = "$PACKAGE_BYTES"
+          printf '%s  CatAtlas-Windows.zip\n' "$PACKAGE_SHA256" > "$RUNNER_TEMP/CatAtlas-Windows.zip.sha256"
+          (cd "$RUNNER_TEMP" && sha256sum -c CatAtlas-Windows.zip.sha256)
+          python3 - "$RUNNER_TEMP/CatAtlas-Windows.zip" <<'PY'
+          from pathlib import PurePosixPath
+          import sys, zipfile
+          with zipfile.ZipFile(sys.argv[1]) as archive:
+              names = set(archive.namelist())
+              assert {'CatAtlas.exe', 'CatAtlas.pck', 'design_config.json', 'localization.json'} <= names
+              for name in names:
+                  path = PurePosixPath(name)
+                  assert not path.is_absolute() and '..' not in path.parts and chr(92) not in name
+              assert archive.testzip() is None, 'ZIP CRC check failed'
+          PY
+
+      - name: Prepare an empty draft without replacing existing assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --json isDraft,assets > "$RUNNER_TEMP/release.json" 2> "$RUNNER_TEMP/release-error.txt"; then
+            python3 - "$RUNNER_TEMP/release.json" <<'PY'
+          import json, sys
+          release = json.load(open(sys.argv[1]))
+          assert release['isDraft'], 'Refusing to modify a published release'
+          assert release['assets'] == [], 'Refusing to overwrite existing release assets'
+          PY
+          elif grep -Eiq 'release not found|HTTP 404' "$RUNNER_TEMP/release-error.txt"; then
+            cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
+          Cat Atlas · 猫咪环游手记 — Windows x64 build
+
+          Download CatAtlas-Windows.zip (115.92 MiB), extract all files into one folder, then run CatAtlas.exe.
+          Keep CatAtlas.pck, both JSON files, and licenses/ beside the EXE. Includes English and Simplified Chinese.
+
+          下载 ZIP 后完整解压，再运行 CatAtlas.exe。请将 PCK、两个 JSON 文件和许可证目录保留在同一目录。
+
+          ZIP integrity and archive structure were verified. Windows runtime behavior has not been tested in the Linux development environment.
+          NOTES
+            gh release create "$RELEASE_TAG" --draft --target main \
+              --title 'Cat Atlas — Windows build (2026-11-07)' --notes-file "$RUNNER_TEMP/release-notes.md"
+          else
+            cat "$RUNNER_TEMP/release-error.txt" >&2
+            exit 1
+          fi
+
+      - name: Upload and read back the package
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release upload "$RELEASE_TAG" "$RUNNER_TEMP/CatAtlas-Windows.zip" "$RUNNER_TEMP/CatAtlas-Windows.zip.sha256"
+          mkdir "$RUNNER_TEMP/download-check"
+          gh release download "$RELEASE_TAG" --pattern CatAtlas-Windows.zip --dir "$RUNNER_TEMP/download-check"
+          (cd "$RUNNER_TEMP/download-check" && sha256sum -c ../CatAtlas-Windows.zip.sha256)
+
+      - name: Publish and verify the public download
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release edit "$RELEASE_TAG" --draft=false
+          public_url="https://github.com/$GH_REPO/releases/download/$RELEASE_TAG/CatAtlas-Windows.zip"
+          curl --fail --silent --show-error --location --head --max-time 60 --retry 4 --retry-all-errors --retry-delay 3 "$public_url" > /dev/null
+          printf 'Public download: %s\n' "$public_url"
+
+      - name: Remove only this successful staging branch
+        shell: bash
+        env:
+          STAGING_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          case "$STAGING_BRANCH" in
+            release-upload/*) ;;
+            *) echo 'Refusing to delete a non-staging branch' >&2; exit 1 ;;
+          esac
+          gh api --method DELETE "repos/$GH_REPO/git/refs/heads/$STAGING_BRANCH"
