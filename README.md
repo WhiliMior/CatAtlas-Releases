@@ -13,7 +13,9 @@ This repository distributes the Cat Atlas Windows build through GitHub Releases 
 
 ## Download and run / 下载与运行
 
-After a build is published, download `CatAtlas-Windows.zip` from [Releases](https://github.com/WhiliMior/CatAtlas-Releases/releases).
+[Download Windows ZIP / 下载 Windows 包体（115.92 MiB）](https://github.com/WhiliMior/CatAtlas-Releases/releases/download/cat-atlas-windows-20261107/CatAtlas-Windows.zip) · [SHA-256](https://github.com/WhiliMior/CatAtlas-Releases/releases/download/cat-atlas-windows-20261107/CatAtlas-Windows.zip.sha256)
+
+Download `CatAtlas-Windows.zip` from [Releases](https://github.com/WhiliMior/CatAtlas-Releases/releases).
 Extract **all** files into one folder, then run `CatAtlas.exe`. Keep `CatAtlas.pck`, `design_config.json`, `localization.json`, and `licenses/` beside the EXE. The build is for **Windows x64** and includes **English and Simplified Chinese** (`en`, `zh_CN`).
 
 包体发布后，请从 Releases 下载 `CatAtlas-Windows.zip`，**完整解压**后运行 `CatAtlas.exe`。请将 PCK、两个 JSON 文件和许可证目录保留在 EXE 所在目录。包体适用于 **Windows x64**，包含**英文和简体中文**。
